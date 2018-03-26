@@ -10,7 +10,7 @@ import javax.naming.NamingException;
  * or can't change it for any other reasons.
  */
 public class UnmodifiableLegacyCode {
-    private static String JNDI_QUEUE_NAME = "java:comp/env/jms/queue/MyQueue";
+    private static String JNDI_QUEUE_NAME = "java:comp/env/jms/topic/MyQueue";
 
     /**
      * This method will do successful JNDI lookup only if current thread or classloader is
