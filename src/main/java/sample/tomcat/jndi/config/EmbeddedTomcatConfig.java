@@ -92,7 +92,7 @@ public class EmbeddedTomcatConfig {
 			 */
 			private ContextResource createJmsQueue() {
 				ContextResource resource = new ContextResource();
-				resource.setName("jms/topic/MyQueue");
+				resource.setName("jms/queue/MyQueue");
 				resource.setAuth("Container");
 				resource.setType(ActiveMQQueue.class.getName());
 				resource.setProperty("factory", JNDIReferenceFactory.class.getName());

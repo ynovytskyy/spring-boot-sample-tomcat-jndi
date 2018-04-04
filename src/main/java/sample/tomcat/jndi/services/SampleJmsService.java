@@ -29,7 +29,7 @@ public class SampleJmsService {
         });
     }
 
-    @JmsListener(destination = "jms/topic/MyQueue")
+    @JmsListener(destination = "jms/queue/MyQueue")
     public void processMessage(String message) {
         LOGGER.info("MBP got a message with text [" + message + "]");
     }

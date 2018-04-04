@@ -53,6 +53,12 @@ public class SampleController {
 				UnmodifiableLegacyCode.getMessageQueue();
 	}
 
+	@RequestMapping("/queueFromJndiInAnotherThread")
+	public String queueFromJndiInAnotherThread() {
+		return "JMS Queue retrieved directly from JNDI by legacy code in another thread: " +
+				UnmodifiableLegacyCode.getMessageQueueInAnotherThread();
+	}
+
 	@RequestMapping("/message/{text}")
 	public String sendMessage(@PathVariable String text) {
 		jmsService.sendMessage(text);

@@ -35,17 +35,16 @@ public class JmsConfig {
         // its JNDI classes. Then all classes having this classloader (or ) would have been able to do JNDI lookups.
         // BUT Spring Boot in TomcatEmbeddedServletContainer unbinds this very classloader right after bootstrap finishes.
         // So even if we bind it here, it will get unbound by Spring Boot and we are back to Case 1.
-//        Context context = getContext(applicationContext);
-//        ContextBindings.bindClassLoader(context, context.getNamingToken(), getClass().getClassLoader());
-//        factory.setDestinationResolver(new JndiDestinationResolver());
+        Context context = EmbeddedTomcatJndiDestinationResolver.findTomcatContext(applicationContext);
+        ContextBindings.bindClassLoader(context, context.getNamingToken(), getClass().getClassLoader());
+        factory.setDestinationResolver(new JndiDestinationResolver());
 
         // Case 3. Working workaround - EmbeddedTomcatJndiDestinationResolver that binds Tomcat's App context and its
         // JNDI to the thread where the lookup happens before delegating to JndiDestinationResolver.
         // While the workaround works fine for jmsListenerContainerFactory, any other threads that are not spawned
         // by Tomcat and not affected by this fix (e.g. in a legacy code that can't be changed, which might be common when
         // migrating old modular apps), would not be able to do JNDI lookups.
-        Context context = getContext(applicationContext);
-        factory.setDestinationResolver(new EmbeddedTomcatJndiDestinationResolver(context));
+//        factory.setDestinationResolver(new EmbeddedTomcatJndiDestinationResolver(applicationContext));
 
         factory.setConcurrency("3-10");
         return factory;
@@ -63,7 +62,7 @@ public class JmsConfig {
     @Bean
     public Queue myQueue() throws NamingException {
         JndiObjectFactoryBean bean = new JndiObjectFactoryBean();
-        bean.setJndiName("jms/topic/MyQueue");
+        bean.setJndiName("jms/queue/MyQueue");
         bean.setResourceRef(true);
         bean.afterPropertiesSet();
         return (Queue) bean.getObject();
@@ -71,6 +70,10 @@ public class JmsConfig {
 
     private static class EmbeddedTomcatJndiDestinationResolver extends JndiDestinationResolver {
         private Context context;
+
+        public EmbeddedTomcatJndiDestinationResolver(WebApplicationContext webApplicationContext) {
+            this(findTomcatContext(webApplicationContext));
+        }
 
         public EmbeddedTomcatJndiDestinationResolver(Context context) {
             super();
@@ -87,17 +90,18 @@ public class JmsConfig {
                 throw new DestinationResolutionException("Destination [" + destinationName + "] not found in JNDI", e);
             }
         }
+
+        private static Context findTomcatContext(WebApplicationContext webApplicationContext) {
+            EmbeddedWebApplicationContext ewac = (EmbeddedWebApplicationContext) webApplicationContext;
+            TomcatEmbeddedServletContainer tomcatContainer = (TomcatEmbeddedServletContainer) ewac.getEmbeddedServletContainer();
+            for (Container child : tomcatContainer.getTomcat().getHost().findChildren()) {
+                if (child instanceof Context) {
+                    return (Context) child;
+                }
+            }
+            throw new IllegalStateException("The host does not contain a Context");
+        }
     }
 
-    private Context getContext(WebApplicationContext applicationContext) {
-        EmbeddedWebApplicationContext ewac = (EmbeddedWebApplicationContext) applicationContext;
-        TomcatEmbeddedServletContainer tomcatContainer = (TomcatEmbeddedServletContainer) ewac.getEmbeddedServletContainer();
-        for (Container child : tomcatContainer.getTomcat().getHost().findChildren()) {
-            if (child instanceof Context) {
-                return (Context) child;
-            }
-        }
-        throw new IllegalStateException("The host does not contain a Context");
-    }
 
 }
